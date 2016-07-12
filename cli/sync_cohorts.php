@@ -95,6 +95,7 @@ if ( !is_enabled_auth('cas') && !is_enabled_auth('ldap')) {
 }
 $starttime = microtime();
 $plugin = new auth_plugin_cohort();
+
 $ldap_groups = $plugin->ldap_get_grouplist();
 
 if ($CFG->debug_ldap_groupes){

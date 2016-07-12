@@ -1,7 +1,7 @@
 #!/bin/sh
-SYNC_DIR="/var/www/html/moodle/local/ldap/cli"
+SYNC_DIR="/srv/e-learning/web/local/ldap/cli"
 DATE=`date +%Y-%m-%d`
-LOG_DIR="/work/moodledata.20/sync"
+LOG_DIR="/srv/e-learning/data/sync"
 PHP=/usr/bin/php
 if [ ! -d $LOG_DIR ]; then
 	mkdir -p $LOG_DIR

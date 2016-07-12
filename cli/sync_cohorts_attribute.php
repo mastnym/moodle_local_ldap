@@ -113,7 +113,7 @@ foreach ($cohort_names as $n=>$cohortname) {
             continue;
         }
         
-        $ldap_members = $plugin->get_users_having_attribute_value ($cohortname);
+        $ldap_members = $plugin->get_users_having_attribute_value ("*".$cohortname."*");
         
         // do not create yet the cohort if no known Moodle users are concerned
         if (count($ldap_members)==0) {
@@ -131,7 +131,7 @@ foreach ($cohort_names as $n=>$cohortname) {
 
     } else {
         $cohortid = $cohort->id;
-        $ldap_members = $plugin->get_users_having_attribute_value ($cohortname);
+        $ldap_members = $plugin->get_users_having_attribute_value ("*".$cohortname."*");
     }
     //    print ($cohortid." ");
     

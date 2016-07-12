@@ -639,13 +639,45 @@ class auth_plugin_cohort extends auth_plugin_ldap {
             }
         }
 
-        $this->ldap_close();   
+        $this->ldap_close();
+        auth_plugin_cohort::process_ldap_groups($matchings);
+        pp_print_object("ALL LDAP GROUPS", $matchings); 
         return $matchings;
         
         
         
     }
-       
+ 
+	function process_ldap_groups(&$matchings){
+		function is_simple_group($group){
+			if (strpos(strval($group),';') === false) {
+				return true;
+			}
+			return false;
+		}	
+		
+		foreach ($matchings as $group){
+		    	//just a group simple number
+	    		if (strpos(strval($group),';') === false) {
+		    		continue;
+				}
+				//student is in more than one group
+				else{
+					$groups=explode(";", strval($group));
+					$trimmed_groups = array_map('trim', $groups);
+					//if any not present in all group, add it
+					foreach ($trimmed_groups as $tr_group){
+						if (!in_array($tr_group, $matchings)){
+							array_push($matchings, $tr_group);
+						}
+					}
+					
+				}
+	    	}
+	    	$matchings = array_filter($matchings,'is_simple_group');
+	}
+	
+    
     function get_users_having_attribute_value ($attributevalue) {
             global $CFG, $DB;
         //build a filter

@@ -52,9 +52,9 @@ class auth_plugin_cohort extends auth_plugin_ldap {
     /**
      * cache for found groups dn
      * @var array
-     */ 
-     var $groups_dn_cache; 
-    
+     */
+     var $groups_dn_cache;
+
     /**
      * Constructor.
      */
@@ -67,40 +67,40 @@ class auth_plugin_cohort extends auth_plugin_ldap {
             $this->authtype = 'cas';
             $this->roleauth = 'auth_cas';
             $this->errorlogtag = '[AUTH CAS] ';
-        } else if (is_enabled_auth('ldap')){ 
+        } else if (is_enabled_auth('ldap')){
             $this->authtype = 'ldap';
             $this->roleauth = 'auth_ldap';
-            $this->errorlogtag = '[AUTH LDAP] '; 
+            $this->errorlogtag = '[AUTH LDAP] ';
         } else {
             error_log('[SYNCH COHORTS] ' . get_string('pluginnotenabled', 'auth_ldap'));
             die;
         }
-        
-        //fetch basic settings from LDAP or CAS auth plugin 
+
+        //fetch basic settings from LDAP or CAS auth plugin
         $this->init_plugin($this->authtype);
-        
-        // get my specific settings 
+
+        // get my specific settings
         $extra= get_config('local_ldap');
        // print_r($extra);
         $this->merge_config($extra, 'debug_ldap_groupes', false);
         $CFG->debug_ldap_groupes = $this->config->debug_ldap_groupes; // make my life easier
-        
-        
+
+
         $this->merge_config($extra, 'group_attribute', 'cn');
         $this->merge_config($extra, 'group_class', 'groupOfUniqueNames');
         $this->merge_config($extra, 'process_nested_groups', 0);
-               
+
         $this->merge_config($extra, 'cohort_synching_ldap_attribute_attribute','eduPersonAffiliation');
         $this->merge_config($extra, 'cohort_synching_ldap_attribute_idnumbers','');
-        
+
          $this->merge_config($extra, 'cohort_synching_ldap_groups_autocreate_cohorts',false);
          $this->merge_config($extra, 'cohort_synching_ldap_attribute_autocreate_cohorts',false);
-         
-                 
+
+
          /** Moodle DO convert to lowercase all LDAP attributes in setting screens
          * this cause an issue when searching LDAP group members when user's naming attribute
          * is in mixed case in the LDAP , such as sAMAccountName instead of samaccountname
-         * If your cohorts are not populated by this script try setting this value 
+         * If your cohorts are not populated by this script try setting this value
          */
         if (!empty($extra->real_user_attribute)) {
             if ($CFG->debug_ldap_groupes){
@@ -108,33 +108,33 @@ class auth_plugin_cohort extends auth_plugin_ldap {
             }
             $this->config->user_attribute= $extra->real_user_attribute;
         }
-        
+
         //override if needed the object class defined in Moodle's LDAP settings
-        //useful to restrict this synching to a certain category of LDAP users such as students 
+        //useful to restrict this synching to a certain category of LDAP users such as students
         if (! empty($extra->cohort_synching_ldap_attribute_objectclass)) {
         if ($CFG->debug_ldap_groupes){
                 pp_print_object("using {$extra->cohort_synching_ldap_attribute_objectclass} as object class instead of {$this->config->objectclass}",'');
             }
             $this->config->objectclass=$extra->cohort_synching_ldap_attribute_objectclass;
         }
-        
-        
+
+
         /**
          * cache for found groups dn
          * used for nested groups processing
          */
         $this->groups_dn_cache=array();
         $this->anti_recursion_array=array();
-         
+
         if ($CFG->debug_ldap_groupes){
             pp_print_object('plugin config',$this->config);
         }
 
     }
     /**
-     * 
-     * merge configuration setting 
-     * @param unknown_type $from 
+     *
+     * merge configuration setting
+     * @param unknown_type $from
      * @param unknown_type $key
      * @param unknown_type $default
      */
@@ -566,26 +566,26 @@ class auth_plugin_cohort extends auth_plugin_ldap {
         }
         return $ret;
     }
-    
-    
+
+
         /**
-     * 
+     *
      * returns the distinct values of the target LDAP attribute
      * these will be the idnumbers of the synched Moodle cohorts
-     * @returns array of string 
+     * @returns array of string
      */
     function get_attribute_distinct_values() {
-       
+
         //return array ('affiliate','retired','student','faculty','staff','employee','affiliate','member','alum','emeritus','researcher');
-       
+
         global $CFG, $DB;
-        // only these cohorts will be synched 
+        // only these cohorts will be synched
         if (!empty($this->config->cohort_synching_ldap_attribute_idnumbers )) {
             return explode(',',$this->config->cohort_synching_ldap_attribute_idnumbers) ;
         }
-        
-        
-        //build a filter to fetch all users having something in the target LDAP attribute 
+
+
+        //build a filter to fetch all users having something in the target LDAP attribute
         $filter = '(&('.$this->config->user_attribute.'=*)'.$this->config->objectclass.')';
         $filter='(&'.$filter.'('.$this->config->cohort_synching_ldap_attribute_attribute.'=*))';
         if ($CFG->debug_ldap_groupes) {
@@ -622,15 +622,15 @@ class auth_plugin_cohort extends auth_plugin_ldap {
                 continue;
             }
 
-            // this API function returns all attributes as an array 
-            // wether they are single or multiple 
+            // this API function returns all attributes as an array
+            // wether they are single or multiple
             $users = ldap_get_entries_moodle($ldapconnection, $ldap_result);
-            
+
             // Add found DISTINCT values to list
            for ($i = 0; $i < count($users); $i++) {
                $count=$users[$i][$this->config->cohort_synching_ldap_attribute_attribute]['count'];
                for ($j=0; $j <$count; $j++) {
-                   $value=  textlib::convert($users[$i][$this->config->cohort_synching_ldap_attribute_attribute][$j],
+                   $value=  core_text::convert($users[$i][$this->config->cohort_synching_ldap_attribute_attribute][$j],
                                 $this->config->ldapencoding, 'utf-8');
                    if (! in_array ($value, $matchings)) {
                        array_push($matchings,$value);
@@ -641,21 +641,21 @@ class auth_plugin_cohort extends auth_plugin_ldap {
 
         $this->ldap_close();
         auth_plugin_cohort::process_ldap_groups($matchings);
-        pp_print_object("ALL LDAP GROUPS", $matchings); 
+        pp_print_object("ALL LDAP GROUPS", $matchings);
         return $matchings;
-        
-        
-        
+
+
+
     }
- 
+
 	function process_ldap_groups(&$matchings){
 		function is_simple_group($group){
 			if (strpos(strval($group),';') === false) {
 				return true;
 			}
 			return false;
-		}	
-		
+		}
+
 		foreach ($matchings as $group){
 		    	//just a group simple number
 	    		if (strpos(strval($group),';') === false) {
@@ -671,17 +671,17 @@ class auth_plugin_cohort extends auth_plugin_ldap {
 							array_push($matchings, $tr_group);
 						}
 					}
-					
+
 				}
 	    	}
 	    	$matchings = array_filter($matchings,'is_simple_group');
 	}
-	
-    
+
+
     function get_users_having_attribute_value ($attributevalue) {
             global $CFG, $DB;
         //build a filter
- 
+
         $filter = '(&('.$this->config->user_attribute.'=*)'.$this->config->objectclass.')';
         $filter='(&'.$filter.'('.$this->config->cohort_synching_ldap_attribute_attribute.'='.ldap_addslashes($attributevalue).'))';
         if ($CFG->debug_ldap_groupes) {
@@ -699,7 +699,7 @@ class auth_plugin_cohort extends auth_plugin_ldap {
      if ($CFG->debug_ldap_groupes) {
              pp_print_object('found ',count($matchings). ' matching users in LDAP');
         }
-        
+
           $ret = array ();
         //remove all matching LDAP users unkown to Moodle
         foreach ($matchings as $member) {
@@ -714,11 +714,11 @@ class auth_plugin_cohort extends auth_plugin_ldap {
                 pp_print_object('found ',count($ret). ' matching users known to Moodle');
         }
         return $ret;
-            
+
     }
-    
-    
-    
+
+
+
 
     function get_cohort_members($cohortid) {
         global $DB;
@@ -740,7 +740,7 @@ class auth_plugin_cohort extends auth_plugin_ldap {
     }
 
 }
-      
+
 
 
 /**
